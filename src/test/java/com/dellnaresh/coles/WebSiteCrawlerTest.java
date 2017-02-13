@@ -21,6 +21,7 @@ public class WebSiteCrawlerTest {
     @Test
     public void shouldGetAllCategories() throws Exception {
         assertNotNull(webSiteCrawler.getCategories());
+        assertEquals(webSiteCrawler.getCategories().size(),18);
 
 
     }
