@@ -25,4 +25,10 @@ public class WebSiteCrawlerTest {
 
 
     }
+    @Test
+    public void shouldGetProductJson() throws Exception {
+       webSiteCrawler.getProductJson();
+
+
+    }
 }
