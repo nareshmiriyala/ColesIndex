@@ -13,6 +13,7 @@ import java.util.List;
  * Created by ncmiriyala on 13/02/2017.
  */
 public class WebSiteCrawler {
+    private String searchUrl="https://shop.coles.com.au/online/a-national/back-to-school?tabType=everything&tabId=everything&personaliseSort=false";
     private Logger logger= LoggerFactory.getLogger(WebSiteCrawler.class);
     public String getCategories() throws IOException {
         Document doc = Jsoup.connect("https://shop.coles.com.au/a/a-national/everything/browse").get();
