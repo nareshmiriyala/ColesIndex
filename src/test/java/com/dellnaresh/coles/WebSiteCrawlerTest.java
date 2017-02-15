@@ -1,7 +1,14 @@
 package com.dellnaresh.coles;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -27,8 +34,21 @@ public class WebSiteCrawlerTest {
     }
     @Test
     public void shouldGetProductJson() throws Exception {
-       webSiteCrawler.getProductJson();
+       assertNotNull(webSiteCrawler.getProductJson());
 
 
+    }
+
+    @Test
+    public void shouldGetProductsAsJsonObjects() throws Exception{
+        webSiteCrawler.getProductsAsJson();
+    }
+
+    @Test
+    public void testJsonObject()throws Exception{
+        String content = new String(Files.readAllBytes(Paths.get("src\\test\\java\\com\\dellnaresh\\coles\\product.json")));
+        Gson gson=new Gson();
+        JsonElement jsonElement = gson.toJsonTree(content);
+        System.out.println(jsonElement.isJsonArray());
     }
 }

@@ -1,6 +1,7 @@
 package com.dellnaresh.coles;
 
-import org.json.*;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -27,21 +28,23 @@ public class WebSiteCrawler {
         return getSeoTokens(links.text());
     }
 
-    public void getProductJson() throws Exception {
+    public List<String> getProductJson() throws Exception {
         List<String> categories = getCategories();
+        List<String> productJson = new ArrayList<>();
         categories.stream().forEach(categorie -> {
             try {
 
                 Document doc = Jsoup.connect(getUrlString(categorie)).get();
                 String str = doc.html();
-                if(!str.isEmpty() && str.contains(PRODUCTS)) {
+                if (!str.isEmpty() && str.contains(PRODUCTS)) {
                     String result = str.substring(str.indexOf(PRODUCTS) + 1, str.indexOf("}]"));
-                    logger.info("Category '{}' and Product json {}", categorie,(result + "}]"));
+                    productJson.add(result + "}]");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
+        return productJson;
 
     }
 
@@ -59,5 +62,24 @@ public class WebSiteCrawler {
             tokens.add(seo_token);
         }
         return tokens;
+    }
+
+    public List<JSONObject> getProductsAsJson() throws Exception {
+        List<String> productJson = getProductJson();
+        List<JSONObject> productsAsJsonObjects = new ArrayList<>();
+        productJson.stream().forEach(json -> {
+
+            json = removeProductsFromJson(json);
+            System.out.println(json);
+            JSONArray jsonArray = new JSONArray(json);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                productsAsJsonObjects.add(jsonArray.getJSONObject(0));
+            }
+        });
+        return productsAsJsonObjects;
+    }
+
+    private String removeProductsFromJson(String json) {
+        return json.replaceAll("products\":", "");
     }
 }
