@@ -13,6 +13,19 @@ public class Categorie {
     private String seo_token;
     private int level;
     private String parentCategory;
+    private List<Categorie> childCategorie=new ArrayList<>();
+
+    public void addChildCategorie(Categorie categorie){
+        childCategorie.add(categorie);
+    }
+
+    public List<Categorie> getChildCategorie() {
+        return childCategorie;
+    }
+
+    public void setChildCategorie(List<Categorie> childCategorie) {
+        this.childCategorie = childCategorie;
+    }
 
     public int getId() {
         return id;
@@ -57,11 +70,13 @@ public class Categorie {
     @Override
     public String toString() {
         return "Categorie{" +
-                "id=" + id +
+                "childCategorie=" + childCategorie +
+                ", id=" + id +
                 ", name='" + name + '\'' +
                 ", seo_token='" + seo_token + '\'' +
                 ", level=" + level +
                 ", parentCategory='" + parentCategory + '\'' +
                 '}';
     }
+
 }

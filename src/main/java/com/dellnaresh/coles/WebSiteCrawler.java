@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import static java.util.Objects.nonNull;
 
@@ -68,12 +70,37 @@ public class WebSiteCrawler {
                     String id = jsonObject.getString("uniqueID");
                     Categorie categorie = CategorieBuilder.aCategorie().withLevel(level).withId(Integer.parseInt(id))
                             .withName(name).withSeo_token(seo_token).withParentCategory(parentCategory).build();
-                    tokens.add(categorie);
+                    checkAndAddAsChildIfTheListContainsTheParent(tokens,categorie,parentCategory);
+//                    tokens.add(categorie);
                     getTokens(jsonObject, tokens,seo_token);
                 }
 
             }
         }
+    }
+
+    private void checkAndAddAsChildIfTheListContainsTheParent(List<Categorie> tokens, Categorie categorie, String parentCategory) {
+        if(! addCategorie(tokens, categorie, parentCategory)){
+            tokens.add(categorie);
+        }
+    }
+
+    private boolean addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory) {
+        Optional<Categorie> any = tokens.stream().filter(getCategoriePredicate(parentCategory)).findAny();
+        if(any.isPresent()){
+            any.get().addChildCategorie(categorie);
+            return true;
+        }else {
+            tokens.stream().forEach(token->{
+                addCategorie(token.getChildCategorie(),categorie,parentCategory);
+            });
+            return false;
+        }
+
+    }
+
+    private Predicate<Categorie> getCategoriePredicate(String parentCategory) {
+        return token -> token.getSeo_token().equals(parentCategory);
     }
 
     public List<String> getProductJson() throws Exception {
