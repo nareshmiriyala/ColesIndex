@@ -1,5 +1,6 @@
 package com.dellnaresh.coles;
 
+import com.dellnaresh.model.Categorie;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,6 +10,7 @@ import org.junit.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -33,6 +35,14 @@ public class WebSiteCrawlerTest {
 
     }
     @Test
+    public void shouldGetAllSubCategories() throws Exception {
+        List<Categorie> subCategoriesFor = webSiteCrawler.getAllChildCategories("back-to-school");
+        assertNotNull(subCategoriesFor);
+        subCategoriesFor.stream().forEach(System.out::println);
+
+
+    }
+    @Test
     public void shouldGetProductJson() throws Exception {
        assertNotNull(webSiteCrawler.getProductJson());
 
@@ -41,7 +51,7 @@ public class WebSiteCrawlerTest {
 
     @Test
     public void shouldGetProductsAsJsonObjects() throws Exception{
-        webSiteCrawler.getProductsAsJson();
+        webSiteCrawler.getProductsAsJson().stream().forEach(System.out::println);
     }
 
     @Test
