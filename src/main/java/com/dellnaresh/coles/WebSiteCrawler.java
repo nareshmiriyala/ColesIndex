@@ -80,21 +80,21 @@ public class WebSiteCrawler {
     }
 
     private void checkAndAddAsChildIfTheListContainsTheParent(List<Categorie> tokens, Categorie categorie, String parentCategory) {
-        if(! addCategorie(tokens, categorie, parentCategory)){
+        List<String> updateIfAdded=new ArrayList<>();
+        addCategorie(tokens, categorie, parentCategory,updateIfAdded);
+        if(updateIfAdded.size()==0)
             tokens.add(categorie);
         }
-    }
 
-    private boolean addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory) {
+    private void addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory,List<String> updateIfAadded) {
         Optional<Categorie> any = tokens.stream().filter(getCategoriePredicate(parentCategory)).findAny();
         if(any.isPresent()){
             any.get().addChildCategorie(categorie);
-            return true;
+            updateIfAadded.add("True added");
         }else {
             tokens.stream().forEach(token->{
-                addCategorie(token.getChildCategorie(),categorie,parentCategory);
+                addCategorie(token.getChildCategorie(),categorie,parentCategory,updateIfAadded);
             });
-            return false;
         }
 
     }
