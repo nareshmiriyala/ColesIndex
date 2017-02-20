@@ -11,10 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 /**
@@ -51,18 +53,18 @@ public class WebSiteCrawler {
     private List<Categorie> getAllChildTokens(String json) {
         JSONObject obj = new JSONObject(json);
         List<Categorie> tokens = new ArrayList<>();
-        getTokens(obj, tokens,"");
+        getTokens(obj, tokens, "");
         updateChildUrl(tokens);
         return tokens;
     }
 
-    private void getTokens(JSONObject obj, List<Categorie> tokens,String parentCategory) {
+    private void getTokens(JSONObject obj, List<Categorie> tokens, String parentCategory) {
         if (obj.has(CATALOG_GROUP_VIEW)) {
             JSONArray arr = obj.getJSONArray(CATALOG_GROUP_VIEW);
 
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject jsonObject = arr.getJSONObject(i);
-                if(jsonObject.has(SEO_TOKEN)) {
+                if (jsonObject.has(SEO_TOKEN)) {
                     String seo_token = jsonObject.getString(SEO_TOKEN);
 
                     int level = jsonObject.getInt("level");
@@ -71,9 +73,9 @@ public class WebSiteCrawler {
                     Categorie categorie = CategorieBuilder.aCategorie().withLevel(level).withId(Integer.parseInt(id))
                             .withName(name).withSeo_token(seo_token).withParentCategory(parentCategory)
                             .build();
-                    checkAndAddAsChildIfTheListContainsTheParent(tokens,categorie,parentCategory);
+                    checkAndAddAsChildIfTheListContainsTheParent(tokens, categorie, parentCategory);
 //                    tokens.add(categorie);
-                    getTokens(jsonObject, tokens,seo_token);
+                    getTokens(jsonObject, tokens, seo_token);
                 }
 
             }
@@ -81,20 +83,20 @@ public class WebSiteCrawler {
     }
 
     private void checkAndAddAsChildIfTheListContainsTheParent(List<Categorie> tokens, Categorie categorie, String parentCategory) {
-        List<String> updateIfAdded=new ArrayList<>();
-        addCategorie(tokens, categorie, parentCategory,updateIfAdded);
-        if(updateIfAdded.size()==0)
+        List<String> updateIfAdded = new ArrayList<>();
+        addCategorie(tokens, categorie, parentCategory, updateIfAdded);
+        if (updateIfAdded.size() == 0)
             tokens.add(categorie);
-        }
+    }
 
-    private void addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory,List<String> updateIfAadded) {
+    private void addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory, List<String> updateIfAadded) {
         Optional<Categorie> any = tokens.parallelStream().filter(getCategoriePredicate(parentCategory)).findAny();
-        if(any.isPresent()){
+        if (any.isPresent()) {
             any.get().addChildCategorie(categorie);
             updateIfAadded.add("True added");
-        }else {
-            tokens.parallelStream().forEach(token->{
-                addCategorie(token.getChildCategorie(),categorie,parentCategory,updateIfAadded);
+        } else {
+            tokens.parallelStream().forEach(token -> {
+                addCategorie(token.getChildCategorie(), categorie, parentCategory, updateIfAadded);
             });
         }
 
@@ -129,10 +131,10 @@ public class WebSiteCrawler {
     }
 
     private void updateUrl(List<Categorie> categories) {
-        categories.parallelStream().forEach(cat->{
+        categories.parallelStream().forEach(cat -> {
 
-            cat.getChildCategorie().parallelStream().forEach(child->{
-                 child.setUrl(cat.getUrl()+"/"+child.getSeo_token());
+            cat.getChildCategorie().parallelStream().forEach(child -> {
+                child.setUrl(cat.getUrl() + "/" + child.getSeo_token());
                 updateUrl(cat.getChildCategorie());
             });
 
@@ -141,10 +143,10 @@ public class WebSiteCrawler {
 
     private void getChildProductJson(Categorie categorie) {
         List<Categorie> childCategorie = categorie.getChildCategorie();
-        childCategorie.parallelStream().forEach(childCat->{
+        childCategorie.parallelStream().forEach(childCat -> {
             try {
                 String url = childCat.getUrl();
-                logger.info("Getting products for url {}",url);
+                logger.info("Getting products for url {}", url);
                 getAndAddProductsJson(productJson, url);
                 getChildProductJson(childCat);
             } catch (IOException e) {
@@ -155,7 +157,7 @@ public class WebSiteCrawler {
 
 
     private void getAndAddProductsJson(List<String> productJson, String categorie) throws IOException {
-        if(categorie.matches(".*\\d+.*")){
+        if (categorie.matches(".*\\d+.*")) {
             return;
         }
         Document doc = Jsoup.connect(getUrlString(categorie)).get();
@@ -184,8 +186,13 @@ public class WebSiteCrawler {
 
     public List<JSONObject> getProductsAsJson() throws Exception {
         List<String> productJson = getProductJson();
+
+        return getProductjsonList(productJson);
+    }
+
+    public List<JSONObject> getProductjsonList(List<String> productJson) {
         List<JSONObject> productsAsJsonObjects = Collections.synchronizedList(new ArrayList<>());
-        productJson.stream().forEach(json -> {
+        productJson.parallelStream().forEach(json -> {
 
             json = removeProductsFromJson(json);
 //            logger.info("Json message: {}",json);
@@ -194,8 +201,8 @@ public class WebSiteCrawler {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     productsAsJsonObjects.add(jsonArray.getJSONObject(i));
                 }
-            }catch (Exception e){
-                logger.error("Exception parsing json object json '{}'",json,e);
+            } catch (Exception e) {
+                logger.error("Exception parsing json object json '{}'", json, e);
             }
 
         });

@@ -5,11 +5,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -60,6 +62,11 @@ public class WebSiteCrawlerTest {
     @Test
     public void testJsonObject()throws Exception{
         String content = new String(Files.readAllBytes(Paths.get("src\\test\\java\\com\\dellnaresh\\coles\\product.json")));
+        List<String> produts=new ArrayList<>();
+        produts.add(content);
+        List<JSONObject> productjsonList = webSiteCrawler.getProductjsonList(produts);
+        productjsonList.stream().forEach(json-> System.out.println(json.toString()));
+        System.out.println(productjsonList);
         Gson gson=new Gson();
         JsonElement jsonElement = gson.toJsonTree(content);
         System.out.println(jsonElement.isJsonArray());
