@@ -65,7 +65,11 @@ public class WebSiteCrawlerTest {
         List<String> produts=new ArrayList<>();
         produts.add(content);
         List<JSONObject> productjsonList = webSiteCrawler.getProductjsonList(produts);
-        productjsonList.stream().forEach(json-> System.out.println(json.toString()));
+        productjsonList.stream().forEach(json->{ System.out.println(json.toString());
+            Object p = json.get("p");
+            String s = p.toString();
+            System.out.println(s);
+        });
         System.out.println(productjsonList);
         Gson gson=new Gson();
         JsonElement jsonElement = gson.toJsonTree(content);

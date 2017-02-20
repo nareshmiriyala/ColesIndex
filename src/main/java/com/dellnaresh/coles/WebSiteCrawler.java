@@ -9,6 +9,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +23,8 @@ import static java.util.Objects.nonNull;
 /**
  * Created by ncmiriyala on 13/02/2017.
  */
-public class WebSiteCrawler {
+@Component
+public class WebSiteCrawler implements Crawler {
     public static final String PRODUCTS = "\"products\":";
     public static final String BACK_TO_SCHOOL = "back-to-school";
     public static final String CATALOG_GROUP_VIEW = "catalogGroupView";
@@ -184,12 +186,14 @@ public class WebSiteCrawler {
         return tokens;
     }
 
+    @Override
     public List<JSONObject> getProductsAsJson() throws Exception {
         List<String> productJson = getProductJson();
 
         return getProductjsonList(productJson);
     }
 
+    @Override
     public List<JSONObject> getProductjsonList(List<String> productJson) {
         List<JSONObject> productsAsJsonObjects = Collections.synchronizedList(new ArrayList<>());
         productJson.parallelStream().forEach(json -> {
