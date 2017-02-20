@@ -9,7 +9,7 @@ public final class CategorieBuilder {
     private String seo_token;
     private int level;
     private String parentCategory;
-
+    private String url;
     private CategorieBuilder() {
     }
 
@@ -41,6 +41,10 @@ public final class CategorieBuilder {
         this.parentCategory = parentCategory;
         return this;
     }
+    public CategorieBuilder withUrl(String url) {
+        this.url = url;
+        return this;
+    }
 
     public Categorie build() {
         Categorie categorie = new Categorie();
@@ -49,6 +53,7 @@ public final class CategorieBuilder {
         categorie.setSeo_token(seo_token);
         categorie.setLevel(level);
         categorie.setParentCategory(parentCategory);
+        categorie.setUrl(url);
         return categorie;
     }
 }

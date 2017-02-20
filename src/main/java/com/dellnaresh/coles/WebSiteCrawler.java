@@ -11,12 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 /**
@@ -24,11 +22,12 @@ import static java.util.Objects.nonNull;
  */
 public class WebSiteCrawler {
     public static final String PRODUCTS = "\"products\":";
+    public static final String BACK_TO_SCHOOL = "back-to-school";
     public static final String CATALOG_GROUP_VIEW = "catalogGroupView";
     public static final String SEO_TOKEN = "seo_token";
     private String searchUrlStart = "https://shop.coles.com.au/online/a-national/";
     private String searchUrlEnd = "?tabType=everything&tabId=everything&personaliseSort=false";
-    List<String> productJson = new ArrayList<>();
+    List<String> productJson = Collections.synchronizedList(new ArrayList<>());
     private Logger logger = LoggerFactory.getLogger(WebSiteCrawler.class);
 
     public List<String> getCategories() throws IOException {
@@ -53,6 +52,7 @@ public class WebSiteCrawler {
         JSONObject obj = new JSONObject(json);
         List<Categorie> tokens = new ArrayList<>();
         getTokens(obj, tokens,"");
+        updateChildUrl(tokens);
         return tokens;
     }
 
@@ -69,7 +69,8 @@ public class WebSiteCrawler {
                     String name = jsonObject.getString("name");
                     String id = jsonObject.getString("uniqueID");
                     Categorie categorie = CategorieBuilder.aCategorie().withLevel(level).withId(Integer.parseInt(id))
-                            .withName(name).withSeo_token(seo_token).withParentCategory(parentCategory).build();
+                            .withName(name).withSeo_token(seo_token).withParentCategory(parentCategory)
+                            .build();
                     checkAndAddAsChildIfTheListContainsTheParent(tokens,categorie,parentCategory);
 //                    tokens.add(categorie);
                     getTokens(jsonObject, tokens,seo_token);
@@ -87,12 +88,12 @@ public class WebSiteCrawler {
         }
 
     private void addCategorie(List<Categorie> tokens, Categorie categorie, String parentCategory,List<String> updateIfAadded) {
-        Optional<Categorie> any = tokens.stream().filter(getCategoriePredicate(parentCategory)).findAny();
+        Optional<Categorie> any = tokens.parallelStream().filter(getCategoriePredicate(parentCategory)).findAny();
         if(any.isPresent()){
             any.get().addChildCategorie(categorie);
             updateIfAadded.add("True added");
         }else {
-            tokens.stream().forEach(token->{
+            tokens.parallelStream().forEach(token->{
                 addCategorie(token.getChildCategorie(),categorie,parentCategory,updateIfAadded);
             });
         }
@@ -106,13 +107,13 @@ public class WebSiteCrawler {
     public List<String> getProductJson() throws Exception {
 
 
-        List<String> categories = getCategories();
-        if (nonNull(categories)) {
-            categories.stream().forEach(categorie -> {
-                try {
+        List<Categorie> categories = getAllChildCategories(BACK_TO_SCHOOL);
 
-                    getAndAddProductsJson(productJson, categorie);
-                    getSubCategorieProducts(categorie);
+        if (nonNull(categories)) {
+            categories.parallelStream().forEach(categorie -> {
+                try {
+                    getAndAddProductsJson(productJson, categorie.getUrl());
+                    getChildProductJson(categorie);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -122,25 +123,41 @@ public class WebSiteCrawler {
 
     }
 
-    private void getSubCategorieProducts(String categorie) throws IOException {
-        List<String> subCategoriesFor = getSubCategoriesFor(categorie);
-        if (nonNull(subCategoriesFor)) {
-            subCategoriesFor.stream().forEach(subCategorie -> {
-                try {
-                    getAndAddProductsJson(productJson, subCategorie);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    getSubCategorieProducts(categorie + "/" + subCategorie);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
+    private void updateChildUrl(List<Categorie> categories) {
+
+        updateUrl(categories);
     }
 
+    private void updateUrl(List<Categorie> categories) {
+        categories.parallelStream().forEach(cat->{
+
+            cat.getChildCategorie().parallelStream().forEach(child->{
+                 child.setUrl(cat.getUrl()+"/"+child.getSeo_token());
+                updateUrl(cat.getChildCategorie());
+            });
+
+        });
+    }
+
+    private void getChildProductJson(Categorie categorie) {
+        List<Categorie> childCategorie = categorie.getChildCategorie();
+        childCategorie.parallelStream().forEach(childCat->{
+            try {
+                String url = childCat.getUrl();
+                logger.info("Getting products for url {}",url);
+                getAndAddProductsJson(productJson, url);
+                getChildProductJson(childCat);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+
     private void getAndAddProductsJson(List<String> productJson, String categorie) throws IOException {
+        if(categorie.matches(".*\\d+.*")){
+            return;
+        }
         Document doc = Jsoup.connect(getUrlString(categorie)).get();
         String str = doc.html();
         if (!str.isEmpty() && str.contains(PRODUCTS)) {
@@ -157,7 +174,7 @@ public class WebSiteCrawler {
         JSONObject obj = new JSONObject(json);
 
         JSONArray arr = obj.getJSONArray("catalogGroupView");
-        List<String> tokens = new ArrayList<>();
+        List<String> tokens = Collections.synchronizedList(new ArrayList<>());
         for (int i = 0; i < arr.length(); i++) {
             String seo_token = arr.getJSONObject(i).getString("seo_token");
             tokens.add(seo_token);
@@ -167,14 +184,20 @@ public class WebSiteCrawler {
 
     public List<JSONObject> getProductsAsJson() throws Exception {
         List<String> productJson = getProductJson();
-        List<JSONObject> productsAsJsonObjects = new ArrayList<>();
+        List<JSONObject> productsAsJsonObjects = Collections.synchronizedList(new ArrayList<>());
         productJson.stream().forEach(json -> {
 
             json = removeProductsFromJson(json);
-            JSONArray jsonArray = new JSONArray(json);
-            for (int i = 0; i < jsonArray.length(); i++) {
-                productsAsJsonObjects.add(jsonArray.getJSONObject(i));
+//            logger.info("Json message: {}",json);
+            try {
+                JSONArray jsonArray = new JSONArray(json);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    productsAsJsonObjects.add(jsonArray.getJSONObject(i));
+                }
+            }catch (Exception e){
+                logger.error("Exception parsing json object json '{}'",json,e);
             }
+
         });
         return productsAsJsonObjects;
     }

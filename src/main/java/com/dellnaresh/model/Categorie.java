@@ -3,6 +3,8 @@ package com.dellnaresh.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.isNull;
+
 /**
  * Created by nmiriyal on 16/02/2017.
  */
@@ -13,6 +15,20 @@ public class Categorie {
     private String seo_token;
     private int level;
     private String parentCategory;
+
+    private String url;
+
+    public String getUrl() {
+        if(isNull(parentCategory)||parentCategory.isEmpty()){
+            url=seo_token;
+        }
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
     private List<Categorie> childCategorie=new ArrayList<>();
 
     public void addChildCategorie(Categorie categorie){
@@ -76,7 +92,7 @@ public class Categorie {
                 ", seo_token='" + seo_token + '\'' +
                 ", level=" + level +
                 ", parentCategory='" + parentCategory + '\'' +
+                ", url='" + url + '\'' +
                 '}';
     }
-
 }

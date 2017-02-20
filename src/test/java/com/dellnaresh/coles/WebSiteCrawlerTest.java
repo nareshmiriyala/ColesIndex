@@ -19,6 +19,7 @@ import static org.junit.Assert.assertNotNull;
  * Created by ncmiriyala on 13/02/2017.
  */
 public class WebSiteCrawlerTest {
+    public static final String BACK_TO_SCHOOL = "back-to-school";
     private WebSiteCrawler webSiteCrawler;
 
     @Before
@@ -36,22 +37,24 @@ public class WebSiteCrawlerTest {
     }
     @Test
     public void shouldGetAllSubCategories() throws Exception {
-        List<Categorie> subCategoriesFor = webSiteCrawler.getAllChildCategories("back-to-school");
+        List<Categorie> subCategoriesFor = webSiteCrawler.getAllChildCategories(BACK_TO_SCHOOL);
         assertNotNull(subCategoriesFor);
         subCategoriesFor.stream().forEach(System.out::println);
-
+        assertEquals(subCategoriesFor.size(),18);
 
     }
     @Test
     public void shouldGetProductJson() throws Exception {
-       assertNotNull(webSiteCrawler.getProductJson());
+        List<String> productJson = webSiteCrawler.getProductJson();
+        assertNotNull(productJson);
+        System.out.println(productJson.size());
 
 
     }
 
     @Test
     public void shouldGetProductsAsJsonObjects() throws Exception{
-        webSiteCrawler.getProductsAsJson().stream().forEach(System.out::println);
+        System.out.println(webSiteCrawler.getProductsAsJson().stream().count());
     }
 
     @Test
